@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">MatchMate</string>
+    <string name="loading_matches">Finding matches...</string>
+    <string name="matches_error">Could not load matches. Check your connection and try again.</string>
+    <string name="matches_loaded">%1$d profiles curated for you</string>
+    <string name="cached_matches_loaded">%1$d profiles available</string>
+    <string name="profile_name_age">%1$s, %2$d</string>
+    <string name="profile_location">%1$s, %2$s</string>
+    <string name="accept">Accept</string>
+    <string name="decline">Decline</string>
+    <string name="profile_accepted">Interest sent</string>
+    <string name="profile_declined">Profile passed</string>
+    <string name="profile_pending_sync">Waiting to sync</string>
+    <string name="profile_photo">Profile photo</string>
+</resources>
