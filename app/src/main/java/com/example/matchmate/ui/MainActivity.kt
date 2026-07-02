@@ -100,7 +100,7 @@ class MainActivity : AppCompatActivity() {
         showMessage(uiState.message)
     }
 
-    // Shows one-time messages like accepted, declined, or offline errors.
+    // Shows one-time messages like accepted, declined, offline, or online status.
     private fun showMessage(message: String?) {
         if (message.isNullOrBlank()) {
             return

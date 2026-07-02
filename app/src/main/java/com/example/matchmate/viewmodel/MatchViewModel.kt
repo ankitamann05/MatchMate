@@ -43,7 +43,7 @@ class MatchViewModel @Inject constructor(
     }
     val uiState: LiveData<MatchUiState> = _uiState
 
-    // Watches network changes so cached matches can refresh when internet returns.
+    // Watches network changes so cached matches refresh and online/offline messages can be shown.
     private val networkCallback = object : ConnectivityManager.NetworkCallback() {
         override fun onAvailable(network: Network) {
             viewModelScope.launch {
@@ -121,7 +121,7 @@ class MatchViewModel @Inject constructor(
         updateState { copy(message = null) }
     }
 
-    // Loads data on the IO dispatcher and stores it in Room through the repository.
+    // Loads data on the IO dispatcher, stores it in Room, and optionally reports success.
     private suspend fun loadMatchesPageInBackground(
         page: Int,
         resetPaging: Boolean,

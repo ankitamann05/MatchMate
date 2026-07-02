@@ -47,7 +47,7 @@ object NetworkModule {
         return database.matchProfileDao()
     }
 
-    // Used by the ViewModel to detect online and offline states.
+    // Shared by NetworkUtils and the ViewModel for connectivity checks and callbacks.
     @Provides
     @Singleton
     fun provideConnectivityManager(@ApplicationContext context: Context): ConnectivityManager {
