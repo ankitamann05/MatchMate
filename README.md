@@ -2,6 +2,12 @@
 
 MatchMate is an Android app that displays match profile cards and lets the user accept or decline each profile. Profiles are loaded from the Random User API, cached locally with Room, and shown in a RecyclerView with pagination.
 
+## Demo
+
+<p align="center">
+  <img src="demo/MatchMade_demo.gif" alt="MatchMate demo" width="300" />
+</p>
+
 ## Functionality
 
 - Displays match cards with profile photo, name, age, location, and email.
