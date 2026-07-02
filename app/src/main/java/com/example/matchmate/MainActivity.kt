@@ -1,129 +1,97 @@
 package com.example.matchmate
 
-import android.graphics.Color
 import android.os.Bundle
-import android.view.LayoutInflater
 import android.view.View
-import android.widget.Button
-import android.widget.ImageView
-import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import androidx.activity.viewModels
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
-import androidx.lifecycle.ViewModelProvider
-import com.bumptech.glide.Glide
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
-    private lateinit var matchesContainer: LinearLayout
+    private companion object {
+        const val PAGINATION_THRESHOLD = 3
+    }
+
+    private lateinit var matchAdapter: MatchProfileAdapter
     private lateinit var statusText: TextView
-    private lateinit var viewModel: MatchViewModel
+    private val viewModel: MatchViewModel by viewModels()
 
     // Sets up the screen and starts observing match data from the ViewModel.
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_main)
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
+        val mainView = findViewById<View>(R.id.main)
+        val initialLeft = mainView.paddingLeft
+        val initialTop = mainView.paddingTop
+        val initialRight = mainView.paddingRight
+        val initialBottom = mainView.paddingBottom
+        ViewCompat.setOnApplyWindowInsetsListener(mainView) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
+            v.setPadding(
+                initialLeft + systemBars.left,
+                initialTop + systemBars.top,
+                initialRight + systemBars.right,
+                initialBottom + systemBars.bottom
+            )
             insets
         }
 
-        matchesContainer = findViewById(R.id.matchesContainer)
         statusText = findViewById(R.id.statusText)
+        matchAdapter = MatchProfileAdapter(
+            onAccept = { profile -> viewModel.acceptProfile(profile) },
+            onDecline = { profile -> viewModel.declineProfile(profile) }
+        )
 
-        viewModel = ViewModelProvider(this)[MatchViewModel::class.java]
-        viewModel.profiles.observe(this) { profiles ->
-            renderMatches(profiles)
+        val matchLayoutManager = LinearLayoutManager(this)
+        findViewById<RecyclerView>(R.id.matchesRecyclerView).apply {
+            layoutManager = matchLayoutManager
+            adapter = matchAdapter
+            addOnScrollListener(object : RecyclerView.OnScrollListener() {
+                override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                    super.onScrolled(recyclerView, dx, dy)
+                    if (dy <= 0) {
+                        return
+                    }
+
+                    val visibleItemCount = matchLayoutManager.childCount
+                    val totalItemCount = matchLayoutManager.itemCount
+                    val firstVisibleItem = matchLayoutManager.findFirstVisibleItemPosition()
+                    val isNearEnd = firstVisibleItem + visibleItemCount >=
+                        totalItemCount - PAGINATION_THRESHOLD
+
+                    if (isNearEnd) {
+                        viewModel.loadNextPage()
+                    }
+                }
+            })
         }
-        viewModel.isLoading.observe(this) { isLoading ->
-            if (isLoading) {
-                statusText.text = getString(R.string.loading_matches)
-            }
-        }
-        viewModel.errorMessage.observe(this) { message ->
-            message?.let {
-                statusText.text = it
-            }
-        }
-        viewModel.statusMessage.observe(this) { message ->
-            message?.let {
-                statusText.text = it
-            }
+
+        viewModel.uiState.observe(this) { uiState ->
+            renderState(uiState)
         }
     }
 
-    // Rebuilds the visible list whenever the cached matches change.
-    private fun renderMatches(matches: List<MatchProfileEntity>) {
-        matchesContainer.removeAllViews()
-        if (matches.isEmpty()) {
-            statusText.text = getString(R.string.loading_matches)
+    // Renders all screen data from the single UI state object.
+    private fun renderState(uiState: MatchUiState) {
+        if (uiState.profiles.isEmpty()) {
+            statusText.text = uiState.message ?: getString(R.string.loading_matches)
+            matchAdapter.submitList(emptyList())
             return
         }
 
-        statusText.text = getString(R.string.cached_matches_loaded, matches.size)
-        matches.forEach { profile ->
-            matchesContainer.addView(createProfileCard(profile))
+        statusText.text = when {
+            uiState.isLoading -> getString(R.string.loading_matches)
+            uiState.isLoadingMore -> getString(R.string.loading_more_matches)
+            uiState.message != null -> uiState.message
+            else -> getString(R.string.cached_matches_loaded, uiState.profiles.size)
         }
-    }
-
-    // Creates one profile card and wires its accept or decline actions.
-    private fun createProfileCard(profile: MatchProfileEntity): View {
-        val card = LayoutInflater.from(this)
-            .inflate(R.layout.item_match_profile, matchesContainer, false)
-
-        val photo = card.findViewById<ImageView>(R.id.profilePhoto)
-        val name = card.findViewById<TextView>(R.id.profileName)
-        val location = card.findViewById<TextView>(R.id.profileLocation)
-        val email = card.findViewById<TextView>(R.id.profileEmail)
-        val decision = card.findViewById<TextView>(R.id.decisionText)
-        val syncState = card.findViewById<TextView>(R.id.syncStateText)
-        val declineButton = card.findViewById<Button>(R.id.declineButton)
-        val acceptButton = card.findViewById<Button>(R.id.acceptButton)
-
-        Glide.with(this)
-            .load(profile.photoUrl)
-            .centerCrop()
-            .placeholder(R.drawable.bg_photo_placeholder)
-            .error(R.drawable.bg_photo_placeholder)
-            .into(photo)
-
-        name.text = getString(R.string.profile_name_age, profile.fullName, profile.age)
-        location.text = getString(R.string.profile_location, profile.city, profile.country)
-        email.text = profile.email
-        decision.visibility = if (profile.decision == DecisionStatus.PENDING) View.GONE else View.VISIBLE
-        applyDecisionText(decision, profile.decision)
-
-        syncState.visibility = if (profile.pendingSync) View.VISIBLE else View.GONE
-        declineButton.setOnClickListener {
-            viewModel.declineProfile(profile)
-        }
-        acceptButton.setOnClickListener {
-            viewModel.acceptProfile(profile)
-        }
-
-        val hasDecision = profile.decision != DecisionStatus.PENDING
-        declineButton.isEnabled = !hasDecision
-        acceptButton.isEnabled = !hasDecision
-        declineButton.alpha = if (hasDecision) 0.45f else 1f
-        acceptButton.alpha = if (hasDecision) 0.45f else 1f
-
-        return card
-    }
-
-    // Shows the saved choice with a matching label color.
-    private fun applyDecisionText(decisionView: TextView, decision: String) {
-        when (decision) {
-            DecisionStatus.ACCEPTED -> {
-                decisionView.text = getString(R.string.profile_accepted)
-                decisionView.setTextColor(Color.parseColor("#237A4B"))
-            }
-            DecisionStatus.DECLINED -> {
-                decisionView.text = getString(R.string.profile_declined)
-                decisionView.setTextColor(Color.parseColor("#A04245"))
-            }
-        }
+        matchAdapter.submitList(uiState.profiles)
     }
 }

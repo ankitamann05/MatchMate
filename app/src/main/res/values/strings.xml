@@ -1,6 +1,7 @@
 <resources>
     <string name="app_name">MatchMate</string>
     <string name="loading_matches">Finding matches...</string>
+    <string name="loading_more_matches">Loading more matches...</string>
     <string name="matches_error">Could not load matches. Check your connection and try again.</string>
     <string name="matches_loaded">%1$d profiles curated for you</string>
     <string name="cached_matches_loaded">%1$d profiles available</string>
