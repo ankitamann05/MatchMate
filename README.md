@@ -1,6 +1,6 @@
-# MatchMate
+# MatchMate 
 
-MatchMate is an Android app that displays match profile cards and lets the user accept or decline each profile. Profiles are loaded from the Random User API, cached locally with Room, and shown in a RecyclerView with pagination.
+MatchMate is an Android app that simulates a matrimonial app by displaying match profile cards. Users can accept or decline matches, with all decisions persisted locally for offline access.
 
 ## Demo
 
@@ -8,76 +8,121 @@ MatchMate is an Android app that displays match profile cards and lets the user 
   <img src="demo/MatchMade_demo.gif" alt="MatchMate demo" width="300" />
 </p>
 
-## Functionality
+## Features
 
-- Displays match cards with profile photo, name, age, location, and email.
-- Provides Accept and Decline actions for each profile.
-- Saves the selected decision locally in the Room database.
-- Keeps accepted or declined state visible after app restart.
-- Shows cached profiles when the device is offline.
-- Loads more profiles as the user scrolls near the bottom of the list.
-- Shows toast messages for accept, decline, offline, and error states.
-- Uses a splash screen and custom MatchMate app icon/theme colors.
+- **API Integration:** Fetches user data from the Random User API
+- **Match Cards:** Clean matrimonial card design with profile images
+- **Accept/Decline:** Users can accept or decline matches with one tap
+- **Local Storage:** Profiles and decisions are persisted using Room
+- **Offline Mode:** App works offline with cached match profiles
+- **Pagination:** Loads more profiles as the user scrolls
+- **MVVM Architecture:** Clean separation of UI, state, data, and network layers
+- **Dependency Injection:** Uses Hilt for app-level dependencies
+
+## Project Structure
+
+```text
+src/main/
+├── java/com/example/matchmate/
+│   ├── MatchMateApplication.kt
+│   │
+│   ├── database/
+│   │   ├── MatchMateDatabase.kt
+│   │   ├── MatchProfileDao.kt
+│   │   └── MatchProfileEntity.kt
+│   │
+│   ├── di/
+│   │   └── NetworkModule.kt
+│   │
+│   ├── model/
+│   │   ├── DecisionStatus.kt
+│   │   ├── MatchUiState.kt
+│   │   └── RandomUserModels.kt
+│   │
+│   ├── network/
+│   │   └── RandomUserApi.kt
+│   │
+│   ├── repository/
+│   │   └── MatchRepository.kt
+│   │
+│   ├── ui/
+│   │   ├── MainActivity.kt
+│   │   └── MatchProfileAdapter.kt
+│   │
+│   └── viewmodel/
+│       └── MatchViewModel.kt
+│
+├── res/
+│   ├── drawable/
+│   ├── layout/
+│   ├── mipmap-*/
+│   └── values/
+│
+└── AndroidManifest.xml
+```
+
+## Dependencies
+
+- **Kotlin:** Primary development language
+- **AndroidX AppCompat/Core KTX:** Android compatibility and Kotlin extensions
+- **ConstraintLayout:** XML layout composition
+- **RecyclerView:** Match card list rendering
+- **Material Components:** Material-styled UI elements
+- **Lifecycle ViewModel and LiveData:** Reactive UI state management
+- **Kotlin Coroutines:** Asynchronous API/database work
+- **Retrofit:** API communication
+- **Gson Converter:** JSON parsing for Retrofit responses
+- **Glide:** Async profile image loading
+- **Room:** Local database persistence
+- **Hilt:** Dependency injection
+- **KSP:** Annotation processing for Room and Hilt
+- **AndroidX SplashScreen:** Launch screen support
 
 ## Architecture
 
-The project is separated into packages by responsibility:
+The app follows MVVM architecture:
 
-- `database`: Room database, DAO, and entity classes.
-- `repository`: Data layer that coordinates API results and local storage.
-- `network`: Retrofit API definitions.
-- `model`: UI state, decision constants, and API response models.
-- `di`: Hilt dependency providers.
-- `ui`: Activity and RecyclerView adapter.
-- `viewmodel`: Screen state and business logic.
+- **Models:** API response models, UI state, and decision constants
+- **ViewModel:** Business logic, pagination, offline handling, and user actions
+- **Views:** Activity, XML layouts, and RecyclerView adapter for UI rendering
+- **Repository:** Coordinates network results and local database updates
+- **Database:** Room entity, DAO, and database setup
+- **Network:** Retrofit API definition and dependency setup
 
-The app follows a simple MVVM-style structure:
+Room acts as the local source of truth. The UI observes cached profiles through `LiveData`, so saved accept/decline decisions remain visible after app restart.
 
-- `MainActivity` renders the UI and observes one `MatchUiState`.
-- `MatchViewModel` handles pagination, online/offline checks, and user actions.
-- `MatchRepository` loads profiles and saves decisions.
-- Room is the local source of truth for displayed profiles.
+## Installation
 
-## Libraries Used
-
-- Kotlin
-- AndroidX AppCompat
-- AndroidX Core KTX
-- AndroidX Activity
-- ConstraintLayout
-- RecyclerView
-- Material Components
-- Lifecycle ViewModel and LiveData
-- Kotlin Coroutines
-- Retrofit
-- Gson Converter for Retrofit
-- Glide
-- Room
-- Hilt
-- KSP
-- AndroidX SplashScreen
+1. Clone the repository.
+2. Open the project in Android Studio.
+3. Make sure Android Studio uses JDK 11 or newer.
+4. Sync Gradle.
+5. Build and run the `app` configuration on an emulator or Android device.
 
 ## API
 
-The app uses the public Random User API:
+The app fetches user data from:
 
 ```text
-https://randomuser.me/api/
+Endpoint: https://randomuser.me/api/
 ```
 
-The request uses a fixed seed so paginated results are stable for the app.
+The request uses a fixed seed so paginated results remain stable across app launches.
 
-## Offline Behavior
+## Data Flow
 
-Profiles are cached in Room after they are loaded from the API. When the device is offline, the app continues showing cached profiles. Accept and decline decisions are stored locally.
+```text
+App launches -> Observe cached Room data -> Check network connectivity
+If online -> Fetch users from API -> Save to Room -> Display cards
+If offline -> Load profiles from Room cache -> Display cards
+User accepts/declines -> Update Room -> Update UI state
+User scrolls near bottom -> Fetch next page -> Cache and display more profiles
+```
 
-## Running the App
+## Error Handling
 
-1. Open the project in Android Studio.
-2. Make sure Android Studio uses JDK 11 or newer.
-3. Sync Gradle.
-4. Run the `app` configuration on an emulator or Android device.
+The app displays user-friendly toast messages for accept, decline, offline, and error states. Repository operations return `Result` values so failures can be handled by the ViewModel before updating the UI.
 
-Minimum SDK: 24  
-Target SDK: 36  
-Compile SDK: 36
+## License
+
+This project is for demonstration purposes.
