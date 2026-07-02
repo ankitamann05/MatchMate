@@ -1,4 +1,4 @@
-package com.example.matchmate
+package com.example.matchmate.model
 
 // Models the Random User API response used by the app.
 data class RandomUserResponse(

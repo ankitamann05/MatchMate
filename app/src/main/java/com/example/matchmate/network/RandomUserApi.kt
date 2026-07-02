@@ -1,5 +1,6 @@
-package com.example.matchmate
+package com.example.matchmate.network
 
+import com.example.matchmate.model.RandomUserResponse
 import retrofit2.http.GET
 import retrofit2.http.Query
 

@@ -1,4 +1,4 @@
-package com.example.matchmate
+package com.example.matchmate.viewmodel
 
 import android.net.ConnectivityManager
 import android.net.Network
@@ -8,6 +8,10 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.matchmate.database.MatchProfileEntity
+import com.example.matchmate.model.DecisionStatus
+import com.example.matchmate.model.MatchUiState
+import com.example.matchmate.repository.MatchRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -20,24 +24,27 @@ class MatchViewModel @Inject constructor(
     private val connectivityManager: ConnectivityManager
 ) : ViewModel() {
     private companion object {
+        // Keeps API requests small so RecyclerView pagination stays smooth.
         const val PAGE_SIZE = 10
         const val FIRST_PAGE = 1
+        const val OFFLINE_MESSAGE = "Offline mode: showing cached matches."
+        const val LOAD_ERROR_MESSAGE = "Could not load matches. Check your connection and try again."
+        const val SAVE_ERROR_MESSAGE = "Could not save your choice. Please try again."
     }
 
     private var nextPage = FIRST_PAGE
     private var isPageRequestRunning = false
 
+    // One state object keeps the Activity simple and avoids scattered UI flags.
     private val _uiState = MediatorLiveData<MatchUiState>().apply {
         value = MatchUiState()
     }
     val uiState: LiveData<MatchUiState> = _uiState
 
-    // Watches network changes so offline choices can sync when internet returns.
+    // Watches network changes so cached matches can refresh when internet returns.
     private val networkCallback = object : ConnectivityManager.NetworkCallback() {
         override fun onAvailable(network: Network) {
             viewModelScope.launch {
-                updateState { copy(message = "Connection restored. Syncing saved choices...") }
-                syncPendingDecisionsInBackground()
                 loadMatchesPageInBackground(page = FIRST_PAGE, resetPaging = true)
             }
         }
@@ -48,7 +55,7 @@ class MatchViewModel @Inject constructor(
                     copy(
                         isLoading = false,
                         isLoadingMore = false,
-                        message = "Offline mode: showing cached matches."
+                        message = OFFLINE_MESSAGE
                     )
                 }
             }
@@ -60,15 +67,21 @@ class MatchViewModel @Inject constructor(
         _uiState.addSource(repository.profiles) { profiles ->
             updateState { copy(profiles = profiles) }
         }
-        connectivityManager.registerDefaultNetworkCallback(networkCallback)
+        val isListeningForNetwork = runCatching {
+            connectivityManager.registerDefaultNetworkCallback(networkCallback)
+        }.isSuccess
 
         if (isOnline()) {
             viewModelScope.launch {
-                syncPendingDecisionsInBackground()
                 loadMatchesPageInBackground(page = FIRST_PAGE, resetPaging = true)
             }
         } else {
-            updateState { copy(message = "Offline mode: showing cached matches.") }
+            val message = if (isListeningForNetwork) {
+                OFFLINE_MESSAGE
+            } else {
+                "Could not monitor network changes. Cached matches are still available."
+            }
+            updateState { copy(message = message) }
         }
     }
 
@@ -87,6 +100,7 @@ class MatchViewModel @Inject constructor(
         }
     }
 
+    // Requests the next page only when more data is available.
     fun loadNextPage() {
         viewModelScope.launch {
             if (_uiState.value?.canLoadMore == false) {
@@ -96,6 +110,12 @@ class MatchViewModel @Inject constructor(
         }
     }
 
+    // Clears a toast message after the Activity has shown it.
+    fun clearMessage() {
+        updateState { copy(message = null) }
+    }
+
+    // Loads data on the IO dispatcher and stores it in Room through the repository.
     private suspend fun loadMatchesPageInBackground(page: Int, resetPaging: Boolean) {
         if (isPageRequestRunning) {
             return
@@ -105,7 +125,7 @@ class MatchViewModel @Inject constructor(
                 copy(
                     isLoading = false,
                     isLoadingMore = false,
-                    message = "Offline mode: showing cached matches."
+                    message = OFFLINE_MESSAGE
                 )
             }
             return
@@ -143,7 +163,7 @@ class MatchViewModel @Inject constructor(
                     copy(
                         isLoading = false,
                         isLoadingMore = false,
-                        message = "Could not load matches. Check your connection and try again."
+                        message = LOAD_ERROR_MESSAGE
                     )
                 }
             }
@@ -151,48 +171,39 @@ class MatchViewModel @Inject constructor(
         isPageRequestRunning = false
     }
 
-    // Saves an accepted profile locally and syncs it if possible.
+    // Saves an accepted profile locally.
     fun acceptProfile(profile: MatchProfileEntity) {
         viewModelScope.launch {
-            withContext(Dispatchers.IO) {
+            val result = withContext(Dispatchers.IO) {
                 repository.updateDecision(profile.email, DecisionStatus.ACCEPTED)
             }
-            updateState { copy(message = "Choice saved locally.") }
-            if (isOnline()) {
-                syncPendingDecisionsInBackground()
-            }
+            handleDecisionResult(result, successMessage = "Profile accepted")
         }
     }
 
-    // Saves a declined profile locally and syncs it if possible.
+    // Saves a declined profile locally.
     fun declineProfile(profile: MatchProfileEntity) {
         viewModelScope.launch {
-            withContext(Dispatchers.IO) {
+            val result = withContext(Dispatchers.IO) {
                 repository.updateDecision(profile.email, DecisionStatus.DECLINED)
             }
-            updateState { copy(message = "Choice saved locally.") }
-            if (isOnline()) {
-                syncPendingDecisionsInBackground()
-            }
+            handleDecisionResult(result, successMessage = "Profile declined")
         }
     }
 
-    private suspend fun syncPendingDecisionsInBackground() {
-        val result = withContext(Dispatchers.IO) {
-            repository.syncPendingDecisions()
-        }
+    // Converts database save results into UI messages.
+    private suspend fun handleDecisionResult(result: Result<Unit>, successMessage: String) {
         result.fold(
-            onSuccess = { syncedCount ->
-                if (syncedCount > 0) {
-                    updateState { copy(message = "Synced $syncedCount saved choices.") }
-                }
+            onSuccess = {
+                updateState { copy(message = successMessage) }
             },
             onFailure = {
-                updateState { copy(message = "Saved offline. Will sync when the connection is restored.") }
+                updateState { copy(message = SAVE_ERROR_MESSAGE) }
             }
         )
     }
 
+    // Updates LiveData safely from either the main thread or a background dispatcher.
     private fun updateState(update: MatchUiState.() -> MatchUiState) {
         val currentState = _uiState.value ?: MatchUiState()
         val newState = currentState.update()
@@ -205,8 +216,10 @@ class MatchViewModel @Inject constructor(
 
     // Checks whether the device currently has internet access.
     private fun isOnline(): Boolean {
-        val network = connectivityManager.activeNetwork ?: return false
-        val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
-        return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+        return runCatching {
+            val network = connectivityManager.activeNetwork
+            val capabilities = network?.let { connectivityManager.getNetworkCapabilities(it) }
+            capabilities?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
+        }.getOrDefault(false)
     }
 }

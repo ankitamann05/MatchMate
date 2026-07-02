@@ -1,26 +1,29 @@
-package com.example.matchmate
+package com.example.matchmate.ui
 
 import android.os.Bundle
 import android.view.View
-import android.widget.TextView
+import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
-import androidx.appcompat.app.AppCompatActivity
 import androidx.activity.viewModels
+import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.example.matchmate.R
+import com.example.matchmate.model.MatchUiState
+import com.example.matchmate.viewmodel.MatchViewModel
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
     private companion object {
+        // Starts loading the next page before the user reaches the end.
         const val PAGINATION_THRESHOLD = 3
     }
 
     private lateinit var matchAdapter: MatchProfileAdapter
-    private lateinit var statusText: TextView
     private val viewModel: MatchViewModel by viewModels()
 
     // Sets up the screen and starts observing match data from the ViewModel.
@@ -45,10 +48,14 @@ class MainActivity : AppCompatActivity() {
             insets
         }
 
-        statusText = findViewById(R.id.statusText)
+        // Sends card button actions to the ViewModel.
         matchAdapter = MatchProfileAdapter(
-            onAccept = { profile -> viewModel.acceptProfile(profile) },
-            onDecline = { profile -> viewModel.declineProfile(profile) }
+            onAccept = { profile ->
+                viewModel.acceptProfile(profile)
+            },
+            onDecline = { profile ->
+                viewModel.declineProfile(profile)
+            }
         )
 
         val matchLayoutManager = LinearLayoutManager(this)
@@ -56,6 +63,7 @@ class MainActivity : AppCompatActivity() {
             layoutManager = matchLayoutManager
             adapter = matchAdapter
             addOnScrollListener(object : RecyclerView.OnScrollListener() {
+                // Loads more profiles when the list is scrolled near the bottom.
                 override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
                     super.onScrolled(recyclerView, dx, dy)
                     if (dy <= 0) {
@@ -83,17 +91,22 @@ class MainActivity : AppCompatActivity() {
     // Renders all screen data from the single UI state object.
     private fun renderState(uiState: MatchUiState) {
         if (uiState.profiles.isEmpty()) {
-            statusText.text = uiState.message ?: getString(R.string.loading_matches)
             matchAdapter.submitList(emptyList())
+            showMessage(uiState.message)
             return
         }
 
-        statusText.text = when {
-            uiState.isLoading -> getString(R.string.loading_matches)
-            uiState.isLoadingMore -> getString(R.string.loading_more_matches)
-            uiState.message != null -> uiState.message
-            else -> getString(R.string.cached_matches_loaded, uiState.profiles.size)
-        }
         matchAdapter.submitList(uiState.profiles)
+        showMessage(uiState.message)
+    }
+
+    // Shows one-time messages like accepted, declined, or offline errors.
+    private fun showMessage(message: String?) {
+        if (message.isNullOrBlank()) {
+            return
+        }
+
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+        viewModel.clearMessage()
     }
 }

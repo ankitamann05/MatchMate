@@ -9,8 +9,9 @@
     <string name="profile_location">%1$s, %2$s</string>
     <string name="accept">Accept</string>
     <string name="decline">Decline</string>
+    <string name="accepted">Matched! Send a Message</string>
+    <string name="declined">Profile Declined</string>
     <string name="profile_accepted">Interest sent</string>
     <string name="profile_declined">Profile passed</string>
-    <string name="profile_pending_sync">Waiting to sync</string>
     <string name="profile_photo">Profile photo</string>
 </resources>

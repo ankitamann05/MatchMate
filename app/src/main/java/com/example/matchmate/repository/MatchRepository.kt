@@ -1,13 +1,17 @@
-package com.example.matchmate
+package com.example.matchmate.repository
 
 import androidx.lifecycle.LiveData
+import com.example.matchmate.database.MatchProfileDao
+import com.example.matchmate.database.MatchProfileEntity
+import com.example.matchmate.model.DecisionStatus
+import com.example.matchmate.network.RandomUserApi
 import javax.inject.Inject
 
 class MatchRepository @Inject constructor(
     private val api: RandomUserApi,
     private val dao: MatchProfileDao
 ) {
-    // Exposes saved profiles so the UI can update automatically from Room.
+    // Room is the source of truth, so the UI updates from cached profiles.
     val profiles: LiveData<List<MatchProfileEntity>> = dao.observeProfiles()
 
     // Fetches one page of match profiles and stores them while keeping saved decisions.
@@ -25,9 +29,7 @@ class MatchRepository @Inject constructor(
                     city = user.location.city,
                     country = user.location.country,
                     photoUrl = user.picture.large,
-                    decision = existingProfile?.decision ?: DecisionStatus.PENDING,
-                    pendingSync = existingProfile?.pendingSync ?: false,
-                    updatedAtMillis = existingProfile?.updatedAtMillis ?: System.currentTimeMillis()
+                    decision = existingProfile?.decision ?: DecisionStatus.PENDING
                 )
             }
             dao.upsertProfiles(profiles)
@@ -35,22 +37,13 @@ class MatchRepository @Inject constructor(
         }
     }
 
-    // Marks a profile as accepted or declined and queues it for sync.
-    fun updateDecision(email: String, decision: String) {
-        dao.updateDecision(email, decision, System.currentTimeMillis())
-    }
-
-    // Clears pending sync flags after the server is reachable again.
-    suspend fun syncPendingDecisions(): Result<Int> {
+    // Marks a profile as accepted or declined locally.
+    fun updateDecision(email: String, decision: String): Result<Unit> {
         return runCatching {
-            val pendingProfiles = dao.getPendingSyncProfiles()
-            if (pendingProfiles.isEmpty()) {
-                return@runCatching 0
+            val updatedRows = dao.updateDecision(email, decision)
+            check(updatedRows > 0) {
+                "Could not save choice because this profile is no longer available."
             }
-
-            api.getMatches(results = 1)
-            dao.markSynced(pendingProfiles.map { it.email })
-            pendingProfiles.size
         }
     }
 }

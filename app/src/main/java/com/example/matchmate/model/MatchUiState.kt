@@ -1,5 +1,8 @@
-package com.example.matchmate
+package com.example.matchmate.model
 
+import com.example.matchmate.database.MatchProfileEntity
+
+// Holds everything the main screen needs to render.
 data class MatchUiState(
     val profiles: List<MatchProfileEntity> = emptyList(),
     val isLoading: Boolean = false,

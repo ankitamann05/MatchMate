@@ -1,4 +1,4 @@
-package com.example.matchmate
+package com.example.matchmate.model
 
 // Shared decision values stored in the database and used by the UI.
 object DecisionStatus {

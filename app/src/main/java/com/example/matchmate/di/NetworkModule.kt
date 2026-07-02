@@ -1,14 +1,17 @@
-package com.example.matchmate
+package com.example.matchmate.di
 
 import android.content.Context
 import android.net.ConnectivityManager
-import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
+import com.example.matchmate.database.MatchMateDatabase
+import com.example.matchmate.database.MatchProfileDao
+import com.example.matchmate.network.RandomUserApi
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
 import javax.inject.Singleton
 
 @Module
@@ -30,17 +33,20 @@ object NetworkModule {
         return retrofit.create(RandomUserApi::class.java)
     }
 
+    // Provides the Room database used for offline profile storage.
     @Provides
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): MatchMateDatabase {
         return MatchMateDatabase.getInstance(context)
     }
 
+    // Exposes DAO methods for reading and updating profile decisions.
     @Provides
     fun provideMatchProfileDao(database: MatchMateDatabase): MatchProfileDao {
         return database.matchProfileDao()
     }
 
+    // Used by the ViewModel to detect online and offline states.
     @Provides
     @Singleton
     fun provideConnectivityManager(@ApplicationContext context: Context): ConnectivityManager {

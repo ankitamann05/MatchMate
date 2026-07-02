@@ -3,5 +3,9 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
     <color name="matchmate_brand">#9A1F42</color>
+    <color name="matchmate_brand_subtle">#EBD4DB</color>
+    <color name="matchmate_decline_text">#6F5058</color>
+    <color name="matchmate_declined_state_background">#E9DED9</color>
+    <color name="matchmate_declined_state_text">#5E454B</color>
     <color name="matchmate_splash_icon_background">#9A1F42</color>
 </resources>
