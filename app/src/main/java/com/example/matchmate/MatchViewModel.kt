@@ -25,6 +25,7 @@ class MatchViewModel(application: Application) : AndroidViewModel(application) {
     private val connectivityManager =
         application.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
 
+    // Watches network changes so offline choices can sync when internet returns.
     private val networkCallback = object : ConnectivityManager.NetworkCallback() {
         override fun onAvailable(network: Network) {
             _statusMessage.postValue("Connection restored. Syncing saved choices...")
@@ -37,6 +38,7 @@ class MatchViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    // Connects the database, repository, and network listener when the ViewModel starts.
     init {
         val dao = MatchMateDatabase.getInstance(application).matchProfileDao()
         repository = MatchRepository(NetworkModule.randomUserApi, dao)
@@ -51,6 +53,7 @@ class MatchViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    // Removes the network listener when the ViewModel is no longer used.
     override fun onCleared() {
         super.onCleared()
         runCatching {
@@ -58,6 +61,7 @@ class MatchViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    // Loads fresh matches from the API when online, otherwise keeps cached results visible.
     fun refreshMatches() {
         if (!isOnline()) {
             _isLoading.postValue(false)
@@ -79,6 +83,7 @@ class MatchViewModel(application: Application) : AndroidViewModel(application) {
         )
     }
 
+    // Saves an accepted profile locally and syncs it if possible.
     fun acceptProfile(profile: MatchProfileEntity) {
         repository.updateDecision(profile.email, DecisionStatus.ACCEPTED)
         _statusMessage.postValue("Choice saved locally.")
@@ -87,6 +92,7 @@ class MatchViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    // Saves a declined profile locally and syncs it if possible.
     fun declineProfile(profile: MatchProfileEntity) {
         repository.updateDecision(profile.email, DecisionStatus.DECLINED)
         _statusMessage.postValue("Choice saved locally.")
@@ -95,6 +101,7 @@ class MatchViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    // Sends locally saved choices to the server once a connection is available.
     private fun syncPendingDecisions() {
         repository.syncPendingDecisions(
             onComplete = { syncedCount ->
@@ -108,6 +115,7 @@ class MatchViewModel(application: Application) : AndroidViewModel(application) {
         )
     }
 
+    // Checks whether the device currently has internet access.
     private fun isOnline(): Boolean {
         val network = connectivityManager.activeNetwork ?: return false
         val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false

@@ -3,6 +3,7 @@ package com.example.matchmate
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
+// Stores one match profile and the user's local decision.
 @Entity(tableName = "match_profiles")
 data class MatchProfileEntity(
     @PrimaryKey val email: String,

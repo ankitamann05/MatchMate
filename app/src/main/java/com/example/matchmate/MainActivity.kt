@@ -20,6 +20,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var statusText: TextView
     private lateinit var viewModel: MatchViewModel
 
+    // Sets up the screen and starts observing match data from the ViewModel.
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -54,6 +55,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    // Rebuilds the visible list whenever the cached matches change.
     private fun renderMatches(matches: List<MatchProfileEntity>) {
         matchesContainer.removeAllViews()
         if (matches.isEmpty()) {
@@ -67,6 +69,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    // Creates one profile card and wires its accept or decline actions.
     private fun createProfileCard(profile: MatchProfileEntity): View {
         val card = LayoutInflater.from(this)
             .inflate(R.layout.item_match_profile, matchesContainer, false)
@@ -110,6 +113,7 @@ class MainActivity : AppCompatActivity() {
         return card
     }
 
+    // Shows the saved choice with a matching label color.
     private fun applyDecisionText(decisionView: TextView, decision: String) {
         when (decision) {
             DecisionStatus.ACCEPTED -> {

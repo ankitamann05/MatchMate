@@ -15,6 +15,7 @@ abstract class MatchMateDatabase : RoomDatabase() {
         @Volatile
         private var instance: MatchMateDatabase? = null
 
+        // Provides a single database instance for the whole app.
         fun getInstance(context: Context): MatchMateDatabase {
             return instance ?: synchronized(this) {
                 instance ?: Room.databaseBuilder(
@@ -28,6 +29,7 @@ abstract class MatchMateDatabase : RoomDatabase() {
             }
         }
 
+        // Adds offline sync fields for users upgrading from version 1.
         private val MIGRATION_1_2 = object : Migration(1, 2) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE match_profiles ADD COLUMN pendingSync INTEGER NOT NULL DEFAULT 0")

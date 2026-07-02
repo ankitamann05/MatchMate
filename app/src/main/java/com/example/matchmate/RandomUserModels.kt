@@ -1,5 +1,6 @@
 package com.example.matchmate
 
+// Models the Random User API response used by the app.
 data class RandomUserResponse(
     val results: List<RandomUserDto>
 )

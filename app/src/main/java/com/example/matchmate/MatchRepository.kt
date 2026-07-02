@@ -11,10 +11,12 @@ class MatchRepository(
     private val api: RandomUserApi,
     private val dao: MatchProfileDao
 ) {
+    // Exposes saved profiles so the UI can update automatically from Room.
     val profiles: LiveData<List<MatchProfileEntity>> = dao.observeProfiles()
 
     private val databaseExecutor: ExecutorService = Executors.newSingleThreadExecutor()
 
+    // Fetches match profiles and stores them while keeping any saved decisions.
     fun refreshMatches(
         onSuccess: () -> Unit,
         onError: (String) -> Unit
@@ -59,12 +61,14 @@ class MatchRepository(
         })
     }
 
+    // Marks a profile as accepted or declined and queues it for sync.
     fun updateDecision(email: String, decision: String) {
         databaseExecutor.execute {
             dao.updateDecision(email, decision, System.currentTimeMillis())
         }
     }
 
+    // Clears pending sync flags after the server is reachable again.
     fun syncPendingDecisions(
         onComplete: (Int) -> Unit,
         onError: (String) -> Unit
