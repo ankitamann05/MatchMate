@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import com.example.matchmate.core.Constants
 
 @Database(entities = [MatchProfileEntity::class], version = 1, exportSchema = false)
 abstract class MatchMateDatabase : RoomDatabase() {
@@ -19,7 +20,7 @@ abstract class MatchMateDatabase : RoomDatabase() {
                 instance ?: Room.databaseBuilder(
                     context.applicationContext,
                     MatchMateDatabase::class.java,
-                    "match_mate.db"
+                    Constants.DATABASE_NAME
                 )
                     .build()
                     .also { instance = it }

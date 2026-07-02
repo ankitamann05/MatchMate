@@ -2,6 +2,7 @@ package com.example.matchmate.di
 
 import android.content.Context
 import android.net.ConnectivityManager
+import com.example.matchmate.core.Constants
 import com.example.matchmate.database.MatchMateDatabase
 import com.example.matchmate.database.MatchProfileDao
 import com.example.matchmate.network.RandomUserApi
@@ -22,7 +23,7 @@ object NetworkModule {
     @Singleton
     fun provideRetrofit(): Retrofit {
         return Retrofit.Builder()
-            .baseUrl("https://randomuser.me/")
+            .baseUrl(Constants.BASE_URL)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
     }

@@ -22,43 +22,51 @@ MatchMate is an Android app that simulates a matrimonial app by displaying match
 ## Project Structure
 
 ```text
-src/main/
-├── java/com/example/matchmate/
-│   ├── MatchMateApplication.kt
-│   │
-│   ├── database/
-│   │   ├── MatchMateDatabase.kt
-│   │   ├── MatchProfileDao.kt
-│   │   └── MatchProfileEntity.kt
-│   │
-│   ├── di/
-│   │   └── NetworkModule.kt
-│   │
-│   ├── model/
-│   │   ├── DecisionStatus.kt
-│   │   ├── MatchUiState.kt
-│   │   └── RandomUserModels.kt
-│   │
-│   ├── network/
-│   │   └── RandomUserApi.kt
-│   │
-│   ├── repository/
-│   │   └── MatchRepository.kt
-│   │
-│   ├── ui/
-│   │   ├── MainActivity.kt
-│   │   └── MatchProfileAdapter.kt
-│   │
-│   └── viewmodel/
-│       └── MatchViewModel.kt
-│
-├── res/
-│   ├── drawable/
-│   ├── layout/
-│   ├── mipmap-*/
-│   └── values/
-│
-└── AndroidManifest.xml
+MatchMate/
+└── app/
+    └── src/main/
+        ├── java/com/example/matchmate/
+        │   ├── MatchMateApplication.kt
+        │   │
+        │   ├── core/
+        │   │   └── Constants.kt
+        │   │
+        │   ├── database/
+        │   │   ├── MatchMateDatabase.kt
+        │   │   ├── MatchProfileDao.kt
+        │   │   └── MatchProfileEntity.kt
+        │   │
+        │   ├── di/
+        │   │   └── NetworkModule.kt
+        │   │
+        │   ├── model/
+        │   │   ├── DecisionStatus.kt
+        │   │   ├── MatchUiState.kt
+        │   │   └── RandomUserModels.kt
+        │   │
+        │   ├── network/
+        │   │   └── RandomUserApi.kt
+        │   │
+        │   ├── repository/
+        │   │   └── MatchRepository.kt
+        │   │
+        │   ├── ui/
+        │   │   ├── MainActivity.kt
+        │   │   └── MatchProfileAdapter.kt
+        │   │
+        │   ├── utils/
+        │   │   └── NetworkUtils.kt
+        │   │
+        │   └── viewmodel/
+        │       └── MatchViewModel.kt
+        │
+        ├── res/
+        │   ├── drawable/
+        │   ├── layout/
+        │   ├── mipmap-*/
+        │   └── values/
+        │
+        └── AndroidManifest.xml
 ```
 
 ## Dependencies

@@ -1,18 +1,21 @@
 package com.example.matchmate.viewmodel
 
+import android.content.Context
 import android.net.ConnectivityManager
 import android.net.Network
-import android.net.NetworkCapabilities
 import android.os.Looper
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.matchmate.R
 import com.example.matchmate.database.MatchProfileEntity
 import com.example.matchmate.model.DecisionStatus
 import com.example.matchmate.model.MatchUiState
 import com.example.matchmate.repository.MatchRepository
+import com.example.matchmate.utils.NetworkUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -21,15 +24,14 @@ import javax.inject.Inject
 @HiltViewModel
 class MatchViewModel @Inject constructor(
     private val repository: MatchRepository,
-    private val connectivityManager: ConnectivityManager
+    private val connectivityManager: ConnectivityManager,
+    private val networkUtils: NetworkUtils,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
     private companion object {
         // Keeps API requests small so RecyclerView pagination stays smooth.
         const val PAGE_SIZE = 10
         const val FIRST_PAGE = 1
-        const val OFFLINE_MESSAGE = "Offline mode: showing cached matches."
-        const val LOAD_ERROR_MESSAGE = "Could not load matches. Check your connection and try again."
-        const val SAVE_ERROR_MESSAGE = "Could not save your choice. Please try again."
     }
 
     private var nextPage = FIRST_PAGE
@@ -45,7 +47,11 @@ class MatchViewModel @Inject constructor(
     private val networkCallback = object : ConnectivityManager.NetworkCallback() {
         override fun onAvailable(network: Network) {
             viewModelScope.launch {
-                loadMatchesPageInBackground(page = FIRST_PAGE, resetPaging = true)
+                loadMatchesPageInBackground(
+                    page = FIRST_PAGE,
+                    resetPaging = true,
+                    successMessage = getString(R.string.online_message)
+                )
             }
         }
 
@@ -55,7 +61,7 @@ class MatchViewModel @Inject constructor(
                     copy(
                         isLoading = false,
                         isLoadingMore = false,
-                        message = OFFLINE_MESSAGE
+                        message = getString(R.string.offline_message)
                     )
                 }
             }
@@ -71,15 +77,15 @@ class MatchViewModel @Inject constructor(
             connectivityManager.registerDefaultNetworkCallback(networkCallback)
         }.isSuccess
 
-        if (isOnline()) {
+        if (networkUtils.isOnline()) {
             viewModelScope.launch {
                 loadMatchesPageInBackground(page = FIRST_PAGE, resetPaging = true)
             }
         } else {
             val message = if (isListeningForNetwork) {
-                OFFLINE_MESSAGE
+                getString(R.string.offline_message)
             } else {
-                "Could not monitor network changes. Cached matches are still available."
+                getString(R.string.network_monitor_error)
             }
             updateState { copy(message = message) }
         }
@@ -116,16 +122,20 @@ class MatchViewModel @Inject constructor(
     }
 
     // Loads data on the IO dispatcher and stores it in Room through the repository.
-    private suspend fun loadMatchesPageInBackground(page: Int, resetPaging: Boolean) {
+    private suspend fun loadMatchesPageInBackground(
+        page: Int,
+        resetPaging: Boolean,
+        successMessage: String? = null
+    ) {
         if (isPageRequestRunning) {
             return
         }
-        if (!isOnline()) {
+        if (!networkUtils.isOnline()) {
             updateState {
                 copy(
                     isLoading = false,
                     isLoadingMore = false,
-                    message = OFFLINE_MESSAGE
+                    message = getString(R.string.offline_message)
                 )
             }
             return
@@ -154,7 +164,7 @@ class MatchViewModel @Inject constructor(
                         isLoading = false,
                         isLoadingMore = false,
                         canLoadMore = loadedCount == PAGE_SIZE,
-                        message = null
+                        message = successMessage
                     )
                 }
             },
@@ -163,7 +173,7 @@ class MatchViewModel @Inject constructor(
                     copy(
                         isLoading = false,
                         isLoadingMore = false,
-                        message = LOAD_ERROR_MESSAGE
+                        message = getString(R.string.matches_error)
                     )
                 }
             }
@@ -177,7 +187,7 @@ class MatchViewModel @Inject constructor(
             val result = withContext(Dispatchers.IO) {
                 repository.updateDecision(profile.email, DecisionStatus.ACCEPTED)
             }
-            handleDecisionResult(result, successMessage = "Profile accepted")
+            handleDecisionResult(result, successMessage = getString(R.string.profile_accepted))
         }
     }
 
@@ -187,7 +197,7 @@ class MatchViewModel @Inject constructor(
             val result = withContext(Dispatchers.IO) {
                 repository.updateDecision(profile.email, DecisionStatus.DECLINED)
             }
-            handleDecisionResult(result, successMessage = "Profile declined")
+            handleDecisionResult(result, successMessage = getString(R.string.profile_declined))
         }
     }
 
@@ -198,9 +208,13 @@ class MatchViewModel @Inject constructor(
                 updateState { copy(message = successMessage) }
             },
             onFailure = {
-                updateState { copy(message = SAVE_ERROR_MESSAGE) }
+                updateState { copy(message = getString(R.string.save_error)) }
             }
         )
+    }
+
+    private fun getString(resId: Int): String {
+        return context.getString(resId)
     }
 
     // Updates LiveData safely from either the main thread or a background dispatcher.
@@ -214,12 +228,4 @@ class MatchViewModel @Inject constructor(
         }
     }
 
-    // Checks whether the device currently has internet access.
-    private fun isOnline(): Boolean {
-        return runCatching {
-            val network = connectivityManager.activeNetwork
-            val capabilities = network?.let { connectivityManager.getNetworkCapabilities(it) }
-            capabilities?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
-        }.getOrDefault(false)
-    }
 }

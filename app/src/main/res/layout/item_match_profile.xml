@@ -6,10 +6,10 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginBottom="18dp"
-    app:cardBackgroundColor="#FFF7F7"
+    app:cardBackgroundColor="@color/matchmate_card_background"
     app:cardCornerRadius="18dp"
     app:cardElevation="2dp"
-    app:strokeColor="#F7E5E9"
+    app:strokeColor="@color/matchmate_card_stroke"
     app:strokeWidth="1dp">
 
     <LinearLayout
@@ -49,11 +49,11 @@
                     android:id="@+id/profileName"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:shadowColor="#99000000"
+                    android:shadowColor="@color/matchmate_profile_text_shadow"
                     android:shadowDx="0"
                     android:shadowDy="1"
                     android:shadowRadius="4"
-                    android:textColor="#FFFFFFFF"
+                    android:textColor="@color/matchmate_profile_text_primary"
                     android:textSize="30sp"
                     android:textStyle="bold"
                     tools:text="Rohan, 32" />
@@ -64,15 +64,15 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="10dp"
                     android:drawablePadding="10dp"
-                    android:shadowColor="#99000000"
+                    android:shadowColor="@color/matchmate_profile_text_shadow"
                     android:shadowDx="0"
                     android:shadowDy="1"
                     android:shadowRadius="3"
-                    android:textColor="#F4EBEE"
+                    android:textColor="@color/matchmate_profile_text_secondary"
                     android:textSize="16sp"
                     android:textStyle="bold"
                     android:drawableStart="@drawable/ic_location"
-                    android:drawableTint="#F4EBEE"
+                    android:drawableTint="@color/matchmate_profile_text_secondary"
                     tools:text="Bangalore, Karnataka" />
 
                 <TextView
@@ -83,15 +83,15 @@
                     android:drawablePadding="10dp"
                     android:ellipsize="end"
                     android:maxLines="1"
-                    android:shadowColor="#99000000"
+                    android:shadowColor="@color/matchmate_profile_text_shadow"
                     android:shadowDx="0"
                     android:shadowDy="1"
                     android:shadowRadius="3"
-                    android:textColor="#F4EBEE"
+                    android:textColor="@color/matchmate_profile_text_secondary"
                     android:textSize="16sp"
                     android:textStyle="bold"
                     android:drawableStart="@drawable/ic_email"
-                    android:drawableTint="#F4EBEE"
+                    android:drawableTint="@color/matchmate_profile_text_secondary"
                     tools:text="rohan.32@example.com" />
             </LinearLayout>
         </FrameLayout>
@@ -132,7 +132,7 @@
                 android:elevation="6dp"
                 android:text="@string/accept"
                 android:textAllCaps="false"
-                android:textColor="#FFFFFFFF"
+                android:textColor="@color/white"
                 android:textSize="16sp"
                 android:textStyle="bold" />
         </LinearLayout>
