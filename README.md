@@ -4,9 +4,7 @@ MatchMate is an Android app that simulates a matrimonial app by displaying match
 
 ## Demo
 
-<p align="center">
-  <img src="demo/MatchMade_demo.gif" alt="MatchMate demo" width="300" />
-</p>
+(./Demo_MatchMate.mp4)
 
 ## Features
 
